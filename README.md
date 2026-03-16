@@ -1,36 +1,86 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# RunClubsNearMe (Post-MCP Baseline)
 
-## Getting Started
+This repository is now treated as a Supabase MCP-era codebase.
 
-First, run the development server:
+Goal: evolve from a dynamic run-club directory into a management tool with auth, club-owner dashboards, and runner discovery flows.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Current Architecture
+
+- Frontend: Next.js App Router (TypeScript)
+- Auth/data client: Supabase JS in `src/lib/supabase.ts`
+- Route protection: `src/middleware.ts`
+- MCP configuration: `.vscode/mcp.json`
+
+## Source Of Truth (Important)
+
+- Supabase MCP server config is defined in `.vscode/mcp.json`.
+- App runtime keys come from local environment variables only.
+- Do not hardcode keys in source files.
+- Do not expose service role keys to browser code.
+
+## Required Environment Variables
+
+Create a local `.env.local` file with:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Only use anon/public keys with client-side code.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Local Development
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Install and run:
 
-## Learn More
+```bash
+npm install
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+App runs at `http://localhost:3000`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Auth and Protected Routes
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Login/signup UI: `src/app/auth/page.tsx`
+- Protected areas: `/dashboard/*`, `/discover/*`
+- Guarding logic: `src/middleware.ts`
 
-## Deploy on Vercel
+If you change auth behavior, update middleware and auth page together to avoid redirect loops.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## MCP Workflow
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Use Supabase MCP for schema-safe and project-safe operations.
+
+Recommended pattern:
+
+1. Make schema/table policy changes via MCP.
+2. Reflect resulting app logic in code.
+3. Run lint/tests after each unit of change.
+
+## Cleanup Guardrails
+
+To avoid pre-MCP drift reappearing:
+
+- Keep `.env.local` local-only.
+- Keep `.vscode/mcp.json` as the single MCP config file.
+- Avoid duplicate Supabase client factories unless required.
+- Avoid mixing old auth experiments with current flow.
+
+## Reset To Clean Working State
+
+When local runtime state is odd:
+
+1. Stop dev server.
+2. Delete `.next` build cache.
+3. Restart with `npm run dev`.
+
+## Branching Discipline
+
+Use small commits for each auth/data change so rollback is easy.
+
+Suggested commit sequence:
+
+1. `chore: baseline post-mcp docs`
+2. `feat: auth flow`
+3. `feat: dashboard management actions`
