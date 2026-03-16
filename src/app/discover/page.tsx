@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { clearAuthCookie } from "@/lib/authCookie";
 import type { Club } from "@/lib/supabase";
 
 export default function Discover() {
@@ -36,6 +37,7 @@ export default function Discover() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
+    clearAuthCookie();
     router.push("/auth");
   };
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { clearAuthCookie } from "@/lib/authCookie";
 import type { Club, Run } from "@/lib/supabase";
 
 export default function ClubDashboard() {
@@ -53,6 +54,7 @@ export default function ClubDashboard() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
+    clearAuthCookie();
     router.push("/auth");
   };
 
@@ -94,8 +96,8 @@ export default function ClubDashboard() {
                     key={club.id}
                     onClick={() => setSelectedClub(club)}
                     className={`w-full text-left px-4 py-3 rounded-lg transition ${selectedClub?.id === club.id
-                        ? "bg-black text-white"
-                        : "bg-white border border-gray-200 hover:bg-gray-50"
+                      ? "bg-black text-white"
+                      : "bg-white border border-gray-200 hover:bg-gray-50"
                       }`}
                   >
                     <p className="font-semibold">{club.name}</p>

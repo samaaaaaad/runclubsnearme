@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { setAuthCookie } from "@/lib/authCookie";
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -28,6 +29,9 @@ export default function AuthPage() {
         });
 
         if (authError) throw authError;
+        if (!data.user) throw new Error("No user returned from login.");
+
+        setAuthCookie();
 
         // Redirect based on role
         const { data: userData } = await supabase
@@ -49,6 +53,7 @@ export default function AuthPage() {
         });
 
         if (signUpError) throw signUpError;
+        if (!authData.user) throw new Error("Unable to create account. Please try again.");
 
         // Create user profile
         const { error: profileError } = await supabase.from("users").insert({
@@ -59,6 +64,15 @@ export default function AuthPage() {
         });
 
         if (profileError) throw profileError;
+
+        // Supabase may require email confirmation before creating a session.
+        if (!authData.session) {
+          setError("Account created. Check your email to verify your account, then sign in.");
+          setIsLogin(true);
+          return;
+        }
+
+        setAuthCookie();
 
         // Redirect based on role
         if (role === "club_owner") {
