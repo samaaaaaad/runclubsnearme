@@ -1,0 +1,85 @@
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+⨯ ./src/data/runClubs.ts:80:1
+Parsing ecmascript source code failed
+[0m [90m 78 |[39m   { id[33m:[39m [32m"49"[39m[33m,[39m name[33m:[39m [32m"Penrith Lakes Run"[39m[33m,[39m day[33m:[39m [32m"Saturdays"[39m[33m,[39m time[33m:[39m [32m"7:30 AM"[39m[33m,[39m location[33m:[39m [32m"Regatta Centre"[39m[33m,[39m lng[33m:[39m [35m150.7263[39m[33m,[39m lat[33m:[39m [33m-[39m[35m33.7504[39m }[33m,[39m
+ [90m 79 |[39m   { id[33m:[39m [32m"50"[39m[33m,[39m name[33m:[39m [32m"Campbelltown Joggers"[39m[33m,[39m day[33m:[39m [32m"Sundays"[39m[33m,[39m time[33m:[39m [32m"7:00 AM"[39m[33m,[39m location[33m:[39m [32m"Bradbury Oval"[39m[33m,[39m lng[33m:[39m [35m150.8215[39m[33m,[39m lat[33m:[39m [33m-[39m[35m34.2708[39m }[33m,[39m
+[31m[1m>[22m[39m[90m 80 |[39m
+ [90m    |[39m [31m[1m^[22m[39m[0m
+
+Expression expected
+
+Import traces:
+  Client Component Browser:
+    ./src/data/runClubs.ts [Client Component Browser]
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/data/runClubs.ts [Client Component SSR]
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component]
+
+
+⨯ ./src/data/runClubs.ts:80:1
+Parsing ecmascript source code failed
+[0m [90m 78 |[39m   { id[33m:[39m [32m"49"[39m[33m,[39m name[33m:[39m [32m"Penrith Lakes Run"[39m[33m,[39m day[33m:[39m [32m"Saturdays"[39m[33m,[39m time[33m:[39m [32m"7:30 AM"[39m[33m,[39m location[33m:[39m [32m"Regatta Centre"[39m[33m,[39m lng[33m:[39m [35m150.7263[39m[33m,[39m lat[33m:[39m [33m-[39m[35m33.7504[39m }[33m,[39m
+ [90m 79 |[39m   { id[33m:[39m [32m"50"[39m[33m,[39m name[33m:[39m [32m"Campbelltown Joggers"[39m[33m,[39m day[33m:[39m [32m"Sundays"[39m[33m,[39m time[33m:[39m [32m"7:00 AM"[39m[33m,[39m location[33m:[39m [32m"Bradbury Oval"[39m[33m,[39m lng[33m:[39m [35m150.8215[39m[33m,[39m lat[33m:[39m [33m-[39m[35m34.2708[39m }[33m,[39m
+[31m[1m>[22m[39m[90m 80 |[39m
+ [90m    |[39m [31m[1m^[22m[39m[0m
+
+Expression expected
+
+Import traces:
+  Client Component Browser:
+    ./src/data/runClubs.ts [Client Component Browser]
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/data/runClubs.ts [Client Component SSR]
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component]
+
+
+⨯ ./src/data/runClubs.ts:80:1
+Parsing ecmascript source code failed
+[0m [90m 78 |[39m   { id[33m:[39m [32m"49"[39m[33m,[39m name[33m:[39m [32m"Penrith Lakes Run"[39m[33m,[39m day[33m:[39m [32m"Saturdays"[39m[33m,[39m time[33m:[39m [32m"7:30 AM"[39m[33m,[39m location[33m:[39m [32m"Regatta Centre"[39m[33m,[39m lng[33m:[39m [35m150.7263[39m[33m,[39m lat[33m:[39m [33m-[39m[35m33.7504[39m }[33m,[39m
+ [90m 79 |[39m   { id[33m:[39m [32m"50"[39m[33m,[39m name[33m:[39m [32m"Campbelltown Joggers"[39m[33m,[39m day[33m:[39m [32m"Sundays"[39m[33m,[39m time[33m:[39m [32m"7:00 AM"[39m[33m,[39m location[33m:[39m [32m"Bradbury Oval"[39m[33m,[39m lng[33m:[39m [35m150.8215[39m[33m,[39m lat[33m:[39m [33m-[39m[35m34.2708[39m }[33m,[39m
+[31m[1m>[22m[39m[90m 80 |[39m
+ [90m    |[39m [31m[1m^[22m[39m[0m
+
+Expression expected
+
+Import traces:
+  Client Component Browser:
+    ./src/data/runClubs.ts [Client Component Browser]
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/data/runClubs.ts [Client Component SSR]
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component]
+
+
+⨯ ./src/data/runClubs.ts:80:1
+Parsing ecmascript source code failed
+[0m [90m 78 |[39m   { id[33m:[39m [32m"49"[39m[33m,[39m name[33m:[39m [32m"Penrith Lakes Run"[39m[33m,[39m day[33m:[39m [32m"Saturdays"[39m[33m,[39m time[33m:[39m [32m"7:30 AM"[39m[33m,[39m location[33m:[39m [32m"Regatta Centre"[39m[33m,[39m lng[33m:[39m [35m150.7263[39m[33m,[39m lat[33m:[39m [33m-[39m[35m33.7504[39m }[33m,[39m
+ [90m 79 |[39m   { id[33m:[39m [32m"50"[39m[33m,[39m name[33m:[39m [32m"Campbelltown Joggers"[39m[33m,[39m day[33m:[39m [32m"Sundays"[39m[33m,[39m time[33m:[39m [32m"7:00 AM"[39m[33m,[39m location[33m:[39m [32m"Bradbury Oval"[39m[33m,[39m lng[33m:[39m [35m150.8215[39m[33m,[39m lat[33m:[39m [33m-[39m[35m34.2708[39m }[33m,[39m
+[31m[1m>[22m[39m[90m 80 |[39m
+ [90m    |[39m [31m[1m^[22m[39m[0m
+
+Expression expected
+
+Import traces:
+  Client Component Browser:
+    ./src/data/runClubs.ts [Client Component Browser]
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/data/runClubs.ts [Client Component SSR]
+    ./src/app/page.tsx [Client Component SSR]
+    ./src/app/page.tsx [Server Component]
+
+
