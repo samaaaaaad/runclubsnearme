@@ -15,6 +15,9 @@ export interface RunClub {
   location: string;
   lng: number;
   lat: number;
+  route?: {
+    coordinates: [number, number][];
+  };
 }
 
 export const sydneyRunClubs: RunClub[] = [
