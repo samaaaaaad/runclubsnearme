@@ -1,17 +1,58 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import mapboxgl from "mapbox-gl";
 import { motion } from "framer-motion";
 import { Calendar, LocateFixed, MapPin, ShieldAlert, X } from "lucide-react";
-import { sydneyRunClubs } from "@/data/runClubs";
+import { clearAuthCookie } from "@/lib/authCookie";
+import { isAdminEmail } from "@/lib/access";
+import { DashboardSwitcher } from "@/app/components/DashboardSwitcher";
+import { supabase } from "@/lib/supabase";
+import type { Club } from "@/lib/supabase";
 
-type Club = (typeof sydneyRunClubs)[number];
+type MapClub = Required<Pick<Club, "id" | "name">> & {
+    location: string | null;
+    schedule_day: string | null;
+    schedule_time: string | null;
+    lat: number | null;
+    lng: number | null;
+    owner_id: string | null;
+};
+
+type ClubDbMeta = {
+    ownerId: string | null;
+    nextRunLabel: string | null;
+    eventCount: number;
+};
 
 const DEFAULT_CENTER: [number, number] = [151.2093, -33.8688];
 
 const DAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+const DAY_TITLE = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+const normalizeClubName = (value: string): string => value.trim().toLowerCase();
+
+const simplifyScheduleDayLabel = (value?: string | null): string => {
+    if (!value) return "TBD";
+
+    const normalized = value.toLowerCase();
+
+    if (normalized.includes("daily") || normalized.includes("everyday")) return "Daily";
+    if (normalized.includes("weekday")) return "Weekdays";
+    if (normalized.includes("weekend")) return "Weekends";
+
+    const matchedDays = DAY_TITLE.filter((day) => {
+        const lower = day.toLowerCase();
+        return normalized.includes(lower) || normalized.includes(lower.slice(0, 3));
+    });
+
+    if (matchedDays.length > 0) {
+        return matchedDays.map((day) => `${day}s`).join(", ");
+    }
+
+    return value;
+};
 
 const parseRunDays = (dayString: string): number[] => {
     const normalized = dayString.toLowerCase();
@@ -89,20 +130,45 @@ const getNextRunTime = (dayString: string, timeString: string, now: Date = new D
 };
 
 export default function MapPage() {
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [canAccessClubOwner, setCanAccessClubOwner] = useState(false);
+    const [closeDestination, setCloseDestination] = useState("/");
     const [selectedClubId, setSelectedClubId] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<"run-clubs" | "upcoming-runs">("run-clubs");
     const [locationStatus, setLocationStatus] = useState<"pending" | "granted" | "denied">("pending");
+    const [clubs, setClubs] = useState<MapClub[]>([]);
     const [userCoords, setUserCoords] = useState<[number, number] | null>(null);
     const [mapReady, setMapReady] = useState(false);
     const [visibleClubIds, setVisibleClubIds] = useState<Set<string>>(new Set());
-    const [selectedRoute, setSelectedRoute] = useState<Array<[number, number]> | null>(null);
     const [currentTime, setCurrentTime] = useState(new Date());
+    const [clubMetaByName, setClubMetaByName] = useState<Record<string, ClubDbMeta>>({});
     const mapContainerRef = useRef<HTMLDivElement | null>(null);
     const mapRef = useRef<mapboxgl.Map | null>(null);
     const markersRef = useRef<Record<string, mapboxgl.Marker>>({});
     const userMarkerRef = useRef<mapboxgl.Marker | null>(null);
+    const router = useRouter();
 
-    const clubs = useMemo(() => [...sydneyRunClubs].sort((a, b) => a.name.localeCompare(b.name)), []);
+    useEffect(() => {
+        let ignore = false;
+
+        const loadClubs = async () => {
+            const { data } = await supabase
+                .from("clubs")
+                .select("id, name, location, schedule_day, schedule_time, lat, lng, owner_id")
+                .order("name", { ascending: true });
+
+            if (!ignore && data) {
+                setClubs(data as MapClub[]);
+            }
+        };
+
+        void loadClubs();
+
+        return () => {
+            ignore = true;
+        };
+    }, []);
+
     const displayedClubs = useMemo(() => {
         const now = new Date();
         // Filter clubs that are visible on the map if in run-clubs tab
@@ -111,14 +177,16 @@ export default function MapPage() {
             : clubs;
 
         if (activeTab === "upcoming-runs") {
-            return [...clubs].sort((a, b) => getNextRunTime(a.day, a.time, now).getTime() - getNextRunTime(b.day, b.time, now).getTime());
+            return [...clubs].sort(
+                (a, b) =>
+                    getNextRunTime(a.schedule_day || "", a.schedule_time || "", now).getTime() -
+                    getNextRunTime(b.schedule_day || "", b.schedule_time || "", now).getTime()
+            );
         }
         return clubsToDisplay;
     }, [activeTab, clubs, visibleClubIds]);
 
     const isRunLive = useCallback((dayString: string, timeString: string, now: Date): boolean => {
-        const nextRunTime = getNextRunTime(dayString, timeString, now);
-        const lastRunTime = new Date(nextRunTime.getTime() - 7 * 24 * 60 * 60 * 1000); // 7 days ago
         const liveWindow = 30 * 60 * 1000; // 30 minutes in milliseconds
 
         // Check if current time is within 30 minutes of a recent run start time
@@ -142,18 +210,20 @@ export default function MapPage() {
         () => {
             const now = new Date();
             return [...clubs]
-                .sort((a, b) => getNextRunTime(a.day, a.time, now).getTime() - getNextRunTime(b.day, b.time, now).getTime())
+                .sort((a, b) => getNextRunTime(a.schedule_day || "", a.schedule_time || "", now).getTime() - getNextRunTime(b.schedule_day || "", b.schedule_time || "", now).getTime())
                 .slice(0, 30)
                 .map((club) => ({
                     id: `run-${club.id}`,
                     name: club.name,
                     club: club.name,
-                    time: `${club.day} · ${club.time}`,
+                    time:
+                        clubMetaByName[normalizeClubName(club.name)]?.nextRunLabel ||
+                        `${simplifyScheduleDayLabel(club.schedule_day)} · ${club.schedule_time || "TBD"}`,
                     clubId: club.id,
-                    isLive: isRunLive(club.day, club.time, currentTime),
+                    isLive: isRunLive(club.schedule_day || "", club.schedule_time || "", currentTime),
                 }));
         },
-        [clubs, currentTime, isRunLive]
+        [clubs, clubMetaByName, currentTime, isRunLive]
     );
     const hasToken = Boolean(process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN);
 
@@ -173,6 +243,9 @@ export default function MapPage() {
 
         if (bounds) {
             clubs.forEach(club => {
+                if (club.lng === null || club.lat === null) {
+                    return;
+                }
                 if (bounds.contains([club.lng, club.lat])) {
                     visible.add(club.id);
                 }
@@ -213,6 +286,133 @@ export default function MapPage() {
     }, []);
 
     useEffect(() => {
+        let ignore = false;
+
+        const loadAccess = async () => {
+            const {
+                data: { user },
+            } = await supabase.auth.getUser();
+
+            if (!user || ignore) {
+                return;
+            }
+
+            const admin = isAdminEmail(user.email);
+            setIsAdmin(admin);
+            if (admin) {
+                setCloseDestination("/dashboard/admin");
+            }
+
+            const { data: profile } = await supabase
+                .from("users")
+                .select("role")
+                .eq("id", user.id)
+                .maybeSingle();
+
+            if (!ignore) {
+                setCanAccessClubOwner(admin || profile?.role === "club_owner");
+                if (!admin) {
+                    if (profile?.role === "club_owner") {
+                        setCloseDestination("/dashboard/club");
+                    } else {
+                        setCloseDestination("/dashboard/runner");
+                    }
+                }
+            }
+        };
+
+        void loadAccess();
+
+        return () => {
+            ignore = true;
+        };
+    }, []);
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        clearAuthCookie();
+        router.push("/auth");
+    };
+
+    useEffect(() => {
+        let ignore = false;
+
+        const loadClubMeta = async () => {
+            const { data: dbClubs, error: clubsError } = await supabase
+                .from("clubs")
+                .select("id, name, owner_id");
+
+            if (clubsError || !dbClubs) {
+                return;
+            }
+
+            const nextMeta: Record<string, ClubDbMeta> = {};
+            const clubsById = Object.fromEntries(
+                dbClubs.map((club) => [club.id, normalizeClubName(club.name)])
+            );
+
+            dbClubs.forEach((club) => {
+                nextMeta[normalizeClubName(club.name)] = {
+                    ownerId: club.owner_id,
+                    nextRunLabel: null,
+                    eventCount: 0,
+                };
+            });
+
+            const today = new Date().toISOString().slice(0, 10);
+            const { data: dbRuns } = await supabase
+                .from("runs")
+                .select("club_id, date, time")
+                .gte("date", today)
+                .order("date", { ascending: true })
+                .order("time", { ascending: true });
+
+            if (dbRuns) {
+                const runAssignedByClub = new Set<string>();
+                dbRuns.forEach((run) => {
+                    if (runAssignedByClub.has(run.club_id)) {
+                        return;
+                    }
+
+                    const nameKey = clubsById[run.club_id];
+                    if (!nameKey || !nextMeta[nameKey]) {
+                        return;
+                    }
+
+                    runAssignedByClub.add(run.club_id);
+                    nextMeta[nameKey].nextRunLabel = `${run.date} · ${run.time}`;
+                });
+            }
+
+            const { data: dbEvents } = await supabase
+                .from("club_events")
+                .select("club_id, event_date")
+                .gte("event_date", today);
+
+            if (dbEvents) {
+                dbEvents.forEach((event) => {
+                    const nameKey = clubsById[event.club_id];
+                    if (!nameKey || !nextMeta[nameKey]) {
+                        return;
+                    }
+
+                    nextMeta[nameKey].eventCount += 1;
+                });
+            }
+
+            if (!ignore) {
+                setClubMetaByName(nextMeta);
+            }
+        };
+
+        void loadClubMeta();
+
+        return () => {
+            ignore = true;
+        };
+    }, []);
+
+    useEffect(() => {
         if (!hasToken || !mapContainerRef.current || mapRef.current) {
             return;
         }
@@ -231,6 +431,7 @@ export default function MapPage() {
         map.on("load", () => {
             setMapReady(true);
             updateVisibleClubs(map);
+            requestLocation();
         });
 
         map.on("move", () => {
@@ -244,13 +445,7 @@ export default function MapPage() {
             mapRef.current = null;
             setMapReady(false);
         };
-    }, [clearClubMarkers, clearUserMarker, updateVisibleClubs, hasToken]);
-
-    useEffect(() => {
-        if (hasToken) {
-            requestLocation();
-        }
-    }, [hasToken, requestLocation]);
+    }, [clearClubMarkers, clearUserMarker, updateVisibleClubs, hasToken, requestLocation]);
 
     useEffect(() => {
         const map = mapRef.current;
@@ -264,80 +459,6 @@ export default function MapPage() {
         }
         if (map.getSource("route-source")) {
             map.removeSource("route-source");
-        }
-
-        // If a club is selected and has a route, display it
-        const selectedClub = clubs.find(c => c.id === selectedClubId);
-        if (selectedClub?.route) {
-            const routeCoordinates = selectedClub.route.coordinates;
-
-            // Add the route source
-            map.addSource("route-source", {
-                type: "geojson",
-                data: {
-                    type: "Feature",
-                    properties: {},
-                    geometry: {
-                        type: "LineString",
-                        coordinates: routeCoordinates,
-                    },
-                },
-            });
-
-            // Add outer glow layer (wider, more transparent)
-            map.addLayer({
-                id: "route-glow-outer",
-                type: "line",
-                source: "route-source",
-                paint: {
-                    "line-color": "#ff0080",
-                    "line-width": 28,
-                    "line-opacity": 0.15,
-                    "line-blur": 16,
-                },
-            });
-
-            // Add mid glow layer
-            map.addLayer({
-                id: "route-glow-mid",
-                type: "line",
-                source: "route-source",
-                paint: {
-                    "line-color": "#ff0080",
-                    "line-width": 18,
-                    "line-opacity": 0.35,
-                    "line-blur": 10,
-                },
-            });
-
-            // Add inner glow layer
-            map.addLayer({
-                id: "route-glow",
-                type: "line",
-                source: "route-source",
-                paint: {
-                    "line-color": "#ff1493",
-                    "line-width": 10,
-                    "line-opacity": 0.6,
-                    "line-blur": 4,
-                },
-            });
-
-            // Add main route layer (core)
-            map.addLayer({
-                id: "route-layer",
-                type: "line",
-                source: "route-source",
-                paint: {
-                    "line-color": "#ff0080",
-                    "line-width": 5,
-                    "line-opacity": 1,
-                },
-            });
-
-            setSelectedRoute(routeCoordinates);
-        } else {
-            setSelectedRoute(null);
         }
 
         return () => {
@@ -360,7 +481,7 @@ export default function MapPage() {
                 if (currentMap.getSource("route-source")) {
                     currentMap.removeSource("route-source");
                 }
-            } catch (e) {
+            } catch {
                 // Map already destroyed, silently fail
             }
         };
@@ -381,6 +502,10 @@ export default function MapPage() {
         clearClubMarkers();
 
         clubs.forEach((club) => {
+            if (club.lng === null || club.lat === null) {
+                return;
+            }
+
             const el = document.createElement("button");
             el.type = "button";
             el.style.width = "16px";
@@ -439,19 +564,33 @@ export default function MapPage() {
         if (locationStatus !== "granted") {
             return;
         }
+        if (club.lng === null || club.lat === null) {
+            return;
+        }
         setSelectedClubId(club.id);
         mapRef.current?.flyTo({ center: [club.lng, club.lat], zoom: 14, essential: true });
     };
 
     return (
         <div className="fixed inset-0 bg-white text-[#050505]">
-            <Link
-                href="/"
+            <button
+                type="button"
+                onClick={() => router.push(closeDestination)}
                 aria-label="Close map"
                 className="absolute left-4 top-4 z-30 inline-flex h-11 w-11 items-center justify-center rounded-full border border-black/10 bg-white/95 text-[#050505] shadow-sm transition hover:bg-black hover:text-white"
             >
                 <X className="h-5 w-5" />
-            </Link>
+            </button>
+
+            {(isAdmin || canAccessClubOwner) && (
+                <div className="absolute right-4 top-4 z-30">
+                    <DashboardSwitcher
+                        isAdmin={isAdmin}
+                        canAccessClubOwner={canAccessClubOwner}
+                        onLogout={handleLogout}
+                    />
+                </div>
+            )}
 
             <div className="grid h-full grid-cols-1 md:grid-cols-[1fr_360px]">
                 <div className="relative">
@@ -507,12 +646,13 @@ export default function MapPage() {
                                                 >
                                                     Enable Location
                                                 </button>
-                                                <Link
-                                                    href="/"
+                                                <button
+                                                    type="button"
+                                                    onClick={() => router.push(closeDestination)}
                                                     className="rounded-full border border-[#d7dbe1] bg-white px-6 py-2.5 text-sm font-medium tracking-[0.01em] text-[#050505]"
                                                 >
-                                                    Back To Home
-                                                </Link>
+                                                    Back To Dashboard
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -579,6 +719,7 @@ export default function MapPage() {
                                 {activeTab === "run-clubs" ? (
                                     displayedClubs.map((club) => {
                                         const active = selectedClubId === club.id;
+                                        const clubMeta = clubMetaByName[normalizeClubName(club.name)];
                                         return (
                                             <button
                                                 key={club.id}
@@ -590,10 +731,20 @@ export default function MapPage() {
                                                 <h3 className="text-[14px] leading-none font-extrabold uppercase tracking-tight text-black transition-colors group-hover:text-black">
                                                     {club.name}
                                                 </h3>
-                                                <p className="mt-1 text-xs font-medium text-black/50">{club.day} · {club.time}</p>
+                                                <p className="mt-1 text-xs font-medium text-black/50">{simplifyScheduleDayLabel(club.schedule_day)} · {club.schedule_time || "TBD"}</p>
+                                                {clubMeta?.ownerId && (
+                                                    <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.08em] text-emerald-600">
+                                                        Owner Managed
+                                                    </p>
+                                                )}
+                                                {(clubMeta?.eventCount || 0) > 0 && (
+                                                    <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-black/45">
+                                                        {clubMeta?.eventCount} upcoming event{clubMeta?.eventCount === 1 ? "" : "s"}
+                                                    </p>
+                                                )}
                                                 <div className="mt-1.5 flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-black/20 transition-colors group-hover:text-black/40">
                                                     <MapPin className="h-2.5 w-2.5" />
-                                                    {club.location}
+                                                    {club.location || "Location TBD"}
                                                 </div>
                                             </button>
                                         );
