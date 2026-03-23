@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { clearAuthCookie } from "@/lib/authCookie";
@@ -20,7 +20,7 @@ type ClubMember = {
   email?: string;
 };
 
-export default function ClubDashboard() {
+function ClubDashboardContent() {
   const [userId, setUserId] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   const [clubs, setClubs] = useState<Club[]>([]);
@@ -816,5 +816,13 @@ export default function ClubDashboard() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function ClubDashboard() {
+  return (
+    <Suspense fallback={<StickmanLoader label="Loading club dashboard" />}>
+      <ClubDashboardContent />
+    </Suspense>
   );
 }

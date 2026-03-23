@@ -502,9 +502,12 @@ export default function MapPage() {
         clearClubMarkers();
 
         clubs.forEach((club) => {
-            if (club.lng === null || club.lat === null) {
+            if (club.lng == null || club.lat == null) {
                 return;
             }
+
+            const clubLng = club.lng;
+            const clubLat = club.lat;
 
             const el = document.createElement("button");
             el.type = "button";
@@ -518,7 +521,7 @@ export default function MapPage() {
 
             el.addEventListener("click", () => {
                 setSelectedClubId(club.id);
-                map.flyTo({ center: [club.lng, club.lat], zoom: 14, essential: true });
+                map.flyTo({ center: [clubLng, clubLat], zoom: 14, essential: true });
             });
 
             // Add tooltip on hover
@@ -530,14 +533,14 @@ export default function MapPage() {
                 .setHTML(`<div style="font-weight: 600; font-size: 11px; color: white; padding: 6px 10px; white-space: nowrap;">${club.name}</div>`);
 
             el.addEventListener("mouseenter", () => {
-                popup.setLngLat([club.lng, club.lat]).addTo(map);
+                popup.setLngLat([clubLng, clubLat]).addTo(map);
             });
 
             el.addEventListener("mouseleave", () => {
                 popup.remove();
             });
 
-            const marker = new mapboxgl.Marker({ element: el }).setLngLat([club.lng, club.lat]).addTo(map);
+            const marker = new mapboxgl.Marker({ element: el }).setLngLat([clubLng, clubLat]).addTo(map);
             markersRef.current[club.id] = marker;
         });
 
@@ -560,15 +563,17 @@ export default function MapPage() {
         map.flyTo({ center: [userCoords[0], userCoords[1]], zoom: 13, essential: true });
     }, [clubs, clearClubMarkers, clearUserMarker, locationStatus, mapReady, userCoords]);
 
-    const handleSelectClub = (club: Club) => {
+    const handleSelectClub = (club: MapClub) => {
         if (locationStatus !== "granted") {
             return;
         }
-        if (club.lng === null || club.lat === null) {
+        if (club.lng == null || club.lat == null) {
             return;
         }
+        const clubLng = club.lng;
+        const clubLat = club.lat;
         setSelectedClubId(club.id);
-        mapRef.current?.flyTo({ center: [club.lng, club.lat], zoom: 14, essential: true });
+        mapRef.current?.flyTo({ center: [clubLng, clubLat], zoom: 14, essential: true });
     };
 
     return (

@@ -75,7 +75,7 @@ export interface Club {
   schedule_time?: string | null;
   lat?: number | null;
   lng?: number | null;
-  image_url?: string;
+  image_url?: string | null;
   created_at: string;
 }
 

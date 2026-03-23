@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { clearAuthCookie } from "@/lib/authCookie";
 import { isAdminEmail } from "@/lib/access";
@@ -34,7 +34,7 @@ function toLocalDateKey(date: Date) {
     return `${year}-${month}-${day}`;
 }
 
-export default function RunnerDashboardPage() {
+function RunnerDashboardContent() {
     const [loading, setLoading] = useState(true);
     const [userId, setUserId] = useState("");
     const [userEmail, setUserEmail] = useState("");
@@ -484,5 +484,13 @@ export default function RunnerDashboardPage() {
                 </section>
             </main>
         </div>
+    );
+}
+
+export default function RunnerDashboardPage() {
+    return (
+        <Suspense fallback={<StickmanLoader label="Loading runner dashboard" />}>
+            <RunnerDashboardContent />
+        </Suspense>
     );
 }
