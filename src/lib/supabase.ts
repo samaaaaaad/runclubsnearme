@@ -1,7 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+const SUPABASE_ENV_ERROR =
+  'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your deployment environment.';
 
 // Some embedded/browser contexts block the Web Locks API (navigator.locks).
 // Provide a custom auth lock to avoid LockManager errors during sign-in.
@@ -49,12 +52,27 @@ const safeStorage = {
   },
 };
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    lock: authLock,
-    storage: safeStorage,
-  },
-});
+const createMissingEnvClient = () => {
+  return new Proxy(
+    {},
+    {
+      get() {
+        throw new Error(SUPABASE_ENV_ERROR);
+      },
+    }
+  );
+};
+
+export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
+
+export const supabase = isSupabaseConfigured
+  ? createClient(supabaseUrl!, supabaseAnonKey!, {
+      auth: {
+        lock: authLock,
+        storage: safeStorage,
+      },
+    })
+  : (createMissingEnvClient() as ReturnType<typeof createClient>);
 
 // Types for database
 export interface User {
