@@ -67,11 +67,11 @@ export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
 export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl!, supabaseAnonKey!, {
-      auth: {
-        lock: authLock,
-        storage: safeStorage,
-      },
-    })
+    auth: {
+      lock: authLock,
+      storage: safeStorage,
+    },
+  })
   : (createMissingEnvClient() as ReturnType<typeof createClient>);
 
 // Types for database
