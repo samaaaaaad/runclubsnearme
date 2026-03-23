@@ -33,9 +33,12 @@ export default function Page() {
                             <a href="#contact" className="text-sm font-semibold uppercase tracking-[0.02em] hover:text-black/60">
                                 Contact
                             </a>
-                            <a href="#register" className="text-sm font-semibold uppercase tracking-[0.02em] hover:text-black/60">
+                            <Link href="/auth" className="text-sm font-semibold uppercase tracking-[0.02em] hover:text-black/60">
+                                Login
+                            </Link>
+                            <Link href="/auth?mode=signup&role=club_owner" className="text-sm font-semibold uppercase tracking-[0.02em] hover:text-black/60">
                                 Register Club
-                            </a>
+                            </Link>
                             <Link
                                 href="/map"
                                 className="rounded-xl bg-[#050505] px-8 py-3.5 font-display text-base uppercase tracking-[0.05em] text-white shadow-sm transition-all hover:bg-black/90 active:scale-95"
@@ -70,9 +73,12 @@ export default function Page() {
                             <a href="#contact" className="text-2xl font-display uppercase" onClick={() => setIsMenuOpen(false)}>
                                 Contact
                             </a>
-                            <a href="#register" className="text-2xl font-display uppercase" onClick={() => setIsMenuOpen(false)}>
+                            <Link href="/auth" className="text-2xl font-display uppercase" onClick={() => setIsMenuOpen(false)}>
+                                Login
+                            </Link>
+                            <Link href="/auth?mode=signup&role=club_owner" className="text-2xl font-display uppercase" onClick={() => setIsMenuOpen(false)}>
                                 Register Club
-                            </a>
+                            </Link>
                             <Link
                                 href="/map"
                                 className="rounded-lg bg-[#050505] py-4 text-center brutal-text text-lg text-white"
@@ -275,12 +281,12 @@ export default function Page() {
                     <div className="rounded-2xl border border-black/8 bg-white p-10 shadow-[0_8px_24px_rgba(0,0,0,0.05)]">
                         <h2 className="mb-4 font-display text-4xl uppercase">Want to register your run club with us?</h2>
                         <p className="mb-8 text-lg text-black/65">Share your schedule, route, and socials so local runners can find your community.</p>
-                        <a
-                            href="mailto:clubs@runclubsnearme.com"
+                        <Link
+                            href="/auth?mode=signup&role=club_owner"
                             className="inline-flex items-center rounded-full bg-[#050505] px-8 py-3 font-display text-sm uppercase tracking-[0.08em] text-white transition hover:bg-black/90"
                         >
                             Register My Club
-                        </a>
+                        </Link>
                     </div>
                 </div>
             </section>
